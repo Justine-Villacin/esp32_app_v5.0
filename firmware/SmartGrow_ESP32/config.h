@@ -26,9 +26,9 @@
 //     #define SERVER_PORT       8000
 //
 // --- Hosted on Vercel (active) ---
-#define SERVER_USE_HTTPS   false
-#define SERVER_HOST        "192.168.1.54"
-#define SERVER_PORT        8000   // unused while SERVER_USE_HTTPS is true, but must stay defined
+#define SERVER_USE_HTTPS   true
+#define SERVER_HOST        "https://smartgrowv20.vercel.app/"
+#define SERVER_PORT        443   // unused while SERVER_USE_HTTPS is true, but must stay defined
 #define UPDATE_PATH        "/update"
 
 // Must exactly match the SMARTGROW_API_KEY environment variable set on the
