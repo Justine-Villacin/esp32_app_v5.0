@@ -27,7 +27,7 @@
 //
 // --- Hosted on Vercel (active) ---
 #define SERVER_USE_HTTPS   true
-#define SERVER_HOST        "https://smartgrowv20.vercel.app/"
+#define SERVER_HOST        "smartgrowv20.vercel.app"
 #define SERVER_PORT        443   // unused while SERVER_USE_HTTPS is true, but must stay defined
 #define UPDATE_PATH        "/update"
 

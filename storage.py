@@ -63,41 +63,51 @@ DEFAULT_STATE = {
 # Redis client (lazy, cached, never raises on import)
 # ---------------------------------------------------------------------------
 
-_redis_client = None          # cached client instance, or False if unusable
+_redis_client = None          # cached client instance once a connection succeeded
+_redis_retry_after = 0.0      # after a failed connect, wait a few seconds then try again
+_redis_last_error = None      # last connection error text (shown by /api/status)
 _redis_client_lock = threading.Lock()
 
 
 def _get_redis_client():
     """Returns a connected redis client, or None if Redis isn't configured
-    or isn't reachable. Never raises — callers fall back to memory instead."""
-    global _redis_client
+    or isn't reachable right now. Never raises. A failed connect is NOT
+    cached forever (it used to be): it is retried after a short cooldown, so
+    one slow cold start can't silently pin an instance to in-memory storage."""
+    global _redis_client, _redis_retry_after, _redis_last_error
 
     if not REDIS_URL:
         return None
-
-    if _redis_client is False:
-        return None
     if _redis_client is not None:
         return _redis_client
+    if time.time() < _redis_retry_after:
+        return None
 
     with _redis_client_lock:
         if _redis_client is not None:
-            return _redis_client or None
+            return _redis_client
         try:
-            import redis  # imported lazily so a missing package never crashes app.py at import time
+            import redis  # lazy import so a missing package never crashes app.py at import time
             client = redis.from_url(
                 REDIS_URL,
                 decode_responses=True,
-                socket_connect_timeout=2,
-                socket_timeout=2,
+                socket_connect_timeout=3,
+                socket_timeout=3,
             )
             client.ping()
             _redis_client = client
+            _redis_last_error = None
             return _redis_client
-        except Exception as exc:  # noqa: BLE001 - any redis/connection error
-            print(f"[storage] Redis configured but unreachable, falling back to memory: {exc}")
-            _redis_client = False
+        except Exception as exc:  # noqa: BLE001
+            _redis_last_error = f"{type(exc).__name__}: {exc}"
+            print(f"[storage] Redis configured but unreachable, using memory for now: {_redis_last_error}")
+            _redis_retry_after = time.time() + 3
             return None
+
+
+def last_redis_error():
+    """Last Redis connection error (or None). Exposed via /api/status."""
+    return _redis_last_error
 
 
 # ---------------------------------------------------------------------------

@@ -187,6 +187,8 @@ def api_status():
     _, connected = storage.touch()
     return jsonify({
         "storage_backend": storage.backend_name(),
+        "redis_url_set": storage.is_remote_configured(),
+        "redis_error": storage.last_redis_error(),
         "dev_mode": DEV_MODE,
         "api_key_required": bool(API_KEY),
         "esp32_connected": connected,

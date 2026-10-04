@@ -306,37 +306,12 @@ void postReading() {
   WiFiClientSecure secureClient;
 
   if (SERVER_USE_HTTPS) {
-    // Skips certificate validation — the simplest working option for a
-    // hobbyist device without managing a CA bundle. If you need real
-    // certificate validation, replace this with secureClient.setCACert(...)
-    // and your host's root CA. MUST be set before any connect() attempt,
-    // including the diagnostic one just below — otherwise the diagnostic
-    // connect would try (and fail) full certificate-chain validation,
-    // reporting a misleading failure unrelated to the real POST attempt.
+    // Skips certificate validation (simplest option for a hobby device).
+    // The old DNS/TLS "diagnostic" connect was removed: it opened an extra
+    // TLS connection before every POST (default timeout can be ~30s), which
+    // doubled handshake time, wasted heap, froze the relay automation, and
+    // made the dashboard flap to "ESP32 DISCONNECTED".
     secureClient.setInsecure();
-
-    // --- Diagnostics: isolate DNS vs. TCP vs. TLS before trying HTTPClient ---
-    // "connection refused" from HTTPClient is a catch-all error code that
-    // can mean a DNS failure, a blocked/unreachable TCP connection, or a
-    // failed TLS handshake. These lines print exactly which layer fails.
-    IPAddress resolvedIP;
-    if (WiFi.hostByName(SERVER_HOST, resolvedIP)) {
-      Serial.printf("[SmartGrow][diag] DNS OK: %s -> %s\n", SERVER_HOST, resolvedIP.toString().c_str());
-    } else {
-      Serial.printf("[SmartGrow][diag] DNS FAILED for %s (network/router may be blocking or slow DNS)\n", SERVER_HOST);
-    }
-
-    bool rawConnected = secureClient.connect(SERVER_HOST, 443);
-    Serial.printf("[SmartGrow][diag] Raw TLS connect() to %s:443 -> %s\n", SERVER_HOST, rawConnected ? "SUCCESS" : "FAILED");
-    if (!rawConnected) {
-      char errBuf[160];
-      secureClient.lastError(errBuf, sizeof(errBuf));
-      Serial.printf("[SmartGrow][diag] mbedTLS error detail: %s\n", errBuf);
-    } else {
-      secureClient.stop(); // diagnostic connection only; HTTPClient opens its own fresh one below
-    }
-    // --- End diagnostics ---
-
     url = String("https://") + SERVER_HOST + UPDATE_PATH;
     began = http.begin(secureClient, url);
   } else {
