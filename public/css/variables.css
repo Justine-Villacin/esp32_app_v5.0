@@ -1,0 +1,20 @@
+:root {
+    --bg-base: #030a07;
+    --surface: #0a1410;
+    --surface-hover: #101f19;
+
+    --border: rgba(255, 255, 255, 0.08);
+    --border-light: rgba(255, 255, 255, 0.15);
+
+    --primary: #00ff88;
+    --primary-glow: rgba(0, 255, 136, 0.3);
+    --info: #00e1ff;
+    --info-glow: rgba(0, 225, 255, 0.3);
+    --warning: #ffd000;
+    --warning-glow: rgba(255, 208, 0, 0.3);
+    --danger: #ff3b6b;
+    --danger-glow: rgba(255, 59, 107, 0.3);
+
+    --text-main: #e2f0e9;
+    --text-muted: #829a8f;
+}

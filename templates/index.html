@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SmartGrow | ESP32 Plant Monitor</title>
+<!-- Linked to the external modular CSS -->
+<link rel="stylesheet" href="/css/main.css?v=7">
+<link rel="manifest" href="/manifest.json">
+<meta name="theme-color" content="#030a07">
+<link rel="apple-touch-icon" href="/icons/icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="SmartGrow">
+
+<!-- Modern Font -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+ 
+<!-- Professional Vector Icons -->
+<script src="https://unpkg.com/@phosphor-icons/web"></script>
+
+<!-- BULLETPROOF MOBILE LAYOUT OVERRIDE -->
+<style>
+    /* Desktop Default Grid for Bottom Sections */
+    .custom-grid { 
+        display: grid; 
+        grid-template-columns: 1fr 1fr; 
+        gap: 20px; 
+        margin-top: 20px; 
+    }
+
+    @media (max-width: 768px) {
+        /* 1. FIX THE OVERLAP ("Nakadikit") BUG */
+        .topbar { margin-bottom: 40px !important; }
+        
+        /* 2. Force 1-column grids on mobile */
+        .custom-grid { grid-template-columns: 1fr; }
+        
+        /* 3. Safely manage tab visibility without triggering layout collapse */
+        #tab-sensors, #tab-auto, #tab-health, #tab-export { display: none; }
+        
+        body.view-sensors #tab-sensors { display: block !important; }
+        body.view-auto #tab-auto { display: block !important; }
+        body.view-health #tab-health { display: block !important; }
+        body.view-export #tab-export { display: block !important; }
+        
+        /* Guarantee grid rendering inside active tabs */
+        body.view-sensors #tab-sensors .sensor-grid { display: grid !important; }
+        body.view-auto #tab-auto .automation-grid { display: grid !important; }
+    }
+</style>
+</head>
+<body>
+
+<div class="app">
+<main class="main">
+
+<div id="backendBanner" class="backend-banner" role="alert" style="display:none;">
+    <i class="ph-fill ph-warning-circle"></i>
+    <span id="backendBannerText">Backend unreachable — retrying...</span>
+</div>
+
+<div class="topbar">
+    <div class="page-title">
+        <h2>
+            <i class="ph-fill ph-plant"></i>
+            <span class="title-mobile">SmartGrow</span>
+        </h2>
+    </div>
+
+    <div class="top-actions">
+        <div class="connection" id="espBadge">
+            <div class="dot" id="espDot"></div> 
+            <span id="espText">WAITING FOR ESP32...</span>
+        </div>
+        <div class="date" id="currentDate">Loading...</div>
+        <button class="control-btn" id="installBtn" onclick="handleInstallClick()">
+            <i class="ph-bold ph-download-simple"></i> Install App
+        </button>
+    </div>
+</div>
+
+<!-- ==========================================
+     TAB 1: SENSORS
+=========================================== -->
+<div id="tab-sensors">
+    <div class="section-header" id="nav-env">
+        <h3>Environmental Overview</h3>
+    </div>
+
+    <div class="sensor-grid">
+        <div class="sensor temperature">
+            <div class="sensor-top">
+                <div class="sensor-icon"><i class="ph-fill ph-thermometer"></i></div>
+                <div class="sensor-status" id="temperatureStatus">NORMAL</div>
+            </div>
+            <div class="sensor-name">TEMPERATURE (Fan triggers at &ge;30&deg;C)</div>
+            <div class="sensor-value"><span id="temperature">--</span><span class="sensor-unit">&deg;C</span></div>
+            <div class="sensor-description">DHT22 Ambient sensor</div>
+        </div>
+
+        <div class="sensor humidity">
+            <div class="sensor-top">
+                <div class="sensor-icon"><i class="ph-fill ph-drop"></i></div>
+                <div class="sensor-status" id="humidityStatus">NORMAL</div>
+            </div>
+            <div class="sensor-name">AIR HUMIDITY</div>
+            <div class="sensor-value"><span id="humidity">--</span><span class="sensor-unit">%</span></div>
+            <div class="sensor-description">Target: 60% - 80% RH</div>
+        </div>
+
+        <div class="sensor soil">
+            <div class="sensor-top">
+                <div class="sensor-icon"><i class="ph-fill ph-potted-plant"></i></div>
+                <div class="sensor-status" id="soilStatus">GOOD</div>
+            </div>
+            <div class="sensor-name">SOIL MOISTURE (Pump triggers at &le;40%)</div>
+            <div class="sensor-value"><span id="soil">--</span><span class="sensor-unit">%</span></div>
+            <div class="sensor-description">Soil probe sensor</div>
+        </div>
+
+        <div class="sensor light">
+            <div class="sensor-top">
+                <div class="sensor-icon"><i class="ph-fill ph-sun"></i></div>
+                <div class="sensor-status" id="lightStatus">OPTIMAL</div>
+            </div>
+            <div class="sensor-name">LIGHT INTENSITY (Grow light assists below 300)</div>
+            <div class="sensor-value"><span id="light">--</span><span class="sensor-unit">/1000</span></div>
+            <div class="sensor-description">LDR sensor, calibrated 0 (dark) - 1000 (bright)</div>
+        </div>
+    </div>
+</div>
+
+<!-- ==========================================
+     TAB 2: AUTO
+=========================================== -->
+<div id="tab-auto">
+    <div class="section-header" id="nav-auto" style="margin-top: 40px;">
+        <div>
+            <h3>Smart Automation</h3>
+            <span style="color: var(--text-muted); font-size: 12px;">ESP32 autonomous system responses</span>
+        </div>
+    </div>
+
+    <div class="automation-grid">
+        <!-- Auto-Watering Card -->
+        <div class="automation-card" id="autoWateringCard">
+            <div class="automation-icon"><i class="ph-fill ph-drop"></i></div>
+            <div class="automation-info">
+                <h4 id="pumpTitle">Auto-Watering: Standby</h4>
+                <p id="pumpDesc">Soil moisture is optimal.</p>
+            </div>
+            <div class="card-controls">
+                <div class="auto-badge-static">
+                    <i class="ph-bold ph-arrows-clockwise"></i>
+                    <span>AUTO</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Grow Light Card -->
+        <div class="automation-card" id="autoLightCard">
+            <div class="automation-icon"><i class="ph-fill ph-lightbulb"></i></div>
+            <div class="automation-info">
+                <h4 id="lightTitle">Grow Light: Standby</h4>
+                <p id="lightDesc">Natural light is sufficient.</p>
+            </div>
+            <div class="card-controls">
+                <div class="auto-badge-static">
+                    <i class="ph-bold ph-arrows-clockwise"></i>
+                    <span>AUTO</span>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Exhaust Fan Card -->
+        <div class="automation-card" id="autoFanCard">
+            <div class="automation-icon"><i class="ph-fill ph-fan"></i></div>
+            <div class="automation-info">
+                <h4 id="fanTitle">Exhaust Fan: Standby</h4>
+                <p id="fanDesc">Temperature is optimal.</p>
+            </div>
+            <div class="card-controls">
+                <div class="auto-badge-static">
+                    <i class="ph-bold ph-arrows-clockwise"></i>
+                    <span>AUTO</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ==========================================
+     TAB 3: HEALTH
+=========================================== -->
+<div id="tab-health">
+    <div class="section-header" id="nav-health" style="margin-top: 40px;">
+        <div>
+            <h3>Plant Health</h3>
+            <span style="color: var(--text-muted); font-size: 12px;">Current condition</span>
+        </div>
+    </div>
+
+    <div class="custom-grid">
+        <!-- Overall Health Card -->
+        <div class="automation-card" style="align-items: center; justify-content: flex-start; gap: 24px; padding: 30px; border-radius: 24px;">
+            <div class="plant"><i class="ph-fill ph-plant"></i></div>
+            <div style="flex-grow: 1;">
+                <div class="health-score" id="healthScore">--%</div>
+                <div class="health-text">OVERALL SCORE</div>
+                <div class="progress"><div class="progress-bar" id="healthProgress" style="width:0%"></div></div>
+            </div>
+        </div>
+
+        <!-- 2x2 Metrics Grid (Spaced consistently like Auto tab) -->
+        <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px;">
+            <div class="automation-card" style="flex-direction: column; align-items: flex-start; justify-content: center; padding: 20px; gap: 6px;">
+                <div class="metric-name" style="color: var(--text-muted); font-size: 10px; letter-spacing: 1px; font-weight: 600;">TEMPERATURE</div>
+                <div class="metric-value good" id="tempHealth" style="font-size: 16px; font-weight: 500;">Optimal</div>
+            </div>
+            <div class="automation-card" style="flex-direction: column; align-items: flex-start; justify-content: center; padding: 20px; gap: 6px;">
+                <div class="metric-name" style="color: var(--text-muted); font-size: 10px; letter-spacing: 1px; font-weight: 600;">HUMIDITY</div>
+                <div class="metric-value good" id="humidityHealth" style="font-size: 16px; font-weight: 500;">Optimal</div>
+            </div>
+            <div class="automation-card" style="flex-direction: column; align-items: flex-start; justify-content: center; padding: 20px; gap: 6px;">
+                <div class="metric-name" style="color: var(--text-muted); font-size: 10px; letter-spacing: 1px; font-weight: 600;">SOIL</div>
+                <div class="metric-value good" id="soilHealth" style="font-size: 16px; font-weight: 500;">Moist</div>
+            </div>
+            <div class="automation-card" style="flex-direction: column; align-items: flex-start; justify-content: center; padding: 20px; gap: 6px;">
+                <div class="metric-name" style="color: var(--text-muted); font-size: 10px; letter-spacing: 1px; font-weight: 600;">LIGHT</div>
+                <div class="metric-value good" id="lightHealth" style="font-size: 16px; font-weight: 500;">Good</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ==========================================
+     TAB 4: EXPORT
+=========================================== -->
+<div id="tab-export">
+    <div class="custom-grid" style="margin-top: 40px;">
+        <!-- System Log Panel -->
+        <div class="panel">
+            <div class="panel-title">
+                <h3>System Log</h3>
+                <span>Today</span>
+            </div>
+            <div class="activity" id="activityFeed"></div>
+        </div>
+
+        <!-- Single Live Data Export Panel -->
+        <div class="panel">
+            <div class="panel-title">
+                <div>
+                    <h3>Data Export</h3>
+                    <span>Download complete ESP32 history</span>
+                </div>
+                <span class="live-badge" style="background: rgba(0, 255, 136, 0.1); color: var(--primary);">READY</span>
+            </div>
+            
+            <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 180px; text-align: center; gap: 15px;">
+                <i class="ph-fill ph-hard-drives" style="font-size: 56px; color: var(--primary); text-shadow: 0 0 20px var(--primary-glow);"></i>
+                
+                <div>
+                    <h4 style="font-size: 16px; margin-bottom: 16px; font-weight: 500;">Complete Sensor Log</h4>
+                    
+                    <!-- Button Container -->
+                    <!-- Plain <a href> downloads were replaced with JS-driven
+                         fetches (downloadFile(), in public/js/utils.js) so a
+                         missing/empty history shows a toast in the System Log
+                         panel instead of a bare, unstyled 404 page. -->
+                    <div style="display: flex; gap: 12px; justify-content: center;">
+                        <button type="button" style="background: transparent; border: 1px solid var(--primary); color: var(--primary); padding: 8px 16px; border-radius: 8px; display: inline-flex; align-items: center; gap: 8px; cursor: pointer; font-family: inherit; font-size: 11px; font-weight: 700; letter-spacing: 1px;" onclick="downloadFile('/sensor_data.csv', 'SmartGrow_Complete_Data.csv')">
+                            <i class="ph-bold ph-file-csv" style="font-size: 14px;"></i> CSV
+                        </button>
+                        <button type="button" class="export-btn btn-excel" onclick="downloadFile('/download/excel', 'SmartGrow_Data.xlsx')">
+                            <i class="ph-bold ph-file-xls"></i> EXCEL
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<footer>
+    <span>SMARTGROW • ESP32 • WI-FI • SMART AGRICULTURE</span>
+    <span id="footerStatus">System online • Last update just now</span>
+</footer>
+
+</main>
+
+<!-- BOTTOM NAVIGATION BAR (Mobile Only) - Adjusted for 4 tabs -->
+<nav class="bottom-nav">
+    <a href="#tab-sensors" class="nav-item active" style="width: 25%;" onclick="switchTab('sensors', this, event)">
+        <i class="ph-fill ph-thermometer"></i>
+        <span>Sensors</span>
+    </a>
+    <a href="#tab-auto" class="nav-item" style="width: 25%;" onclick="switchTab('auto', this, event)">
+        <i class="ph-fill ph-cpu"></i>
+        <span>Auto</span>
+    </a>
+    <a href="#tab-health" class="nav-item" style="width: 25%;" onclick="switchTab('health', this, event)">
+        <i class="ph-fill ph-plant"></i>
+        <span>Health</span>
+    </a>
+    <a href="#tab-export" class="nav-item" style="width: 25%;" onclick="switchTab('export', this, event)">
+        <i class="ph-fill ph-hard-drives"></i>
+        <span>Export</span>
+    </a>
+</nav>
+
+</div>      
+
+<!-- iOS "Add to Home Screen" instructions modal -->
+<div id="iosInstallModal" style="display:none; position:fixed; inset:0; z-index:999; background:rgba(3,10,7,0.85); align-items:center; justify-content:center; padding:20px;">
+    <div style="background: var(--panel-bg, #0a1810); border: 1px solid var(--border, #1f3a2a); border-radius: 16px; max-width: 340px; width:100%; padding: 24px; text-align:center; color: var(--text-main, #e8fff2);">
+        <i class="ph-fill ph-plant" style="font-size:40px; color: var(--primary); text-shadow:0 0 20px var(--primary-glow);"></i>
+        <h4 style="margin: 12px 0 8px; font-size: 16px;">Install SmartGrow</h4>
+        <p style="font-size: 13px; color: var(--text-muted); line-height:1.6; margin-bottom: 18px;">
+            Tap the <i class="ph-bold ph-export"></i> Share icon in Safari's toolbar, then choose
+            <strong>"Add to Home Screen"</strong> to install this dashboard.
+        </p>
+        <button class="control-btn" onclick="closeIosInstallModal()">Got it</button>
+    </div>
+</div>
+
+<!-- Linked to the new ES6 module entry point -->
+<script type="module" src="/js/main.js"></script>
+
+{% if dev_mode %}
+<!-- DEV MODE: live-reload client. Listens to dashboard.py's /dev/reload-stream SSE endpoint. -->
+<script>
+(function () {
+    function connect() {
+        const es = new EventSource('/dev/reload-stream');
+        let hasConnected = false;
+
+        es.onopen = () => { hasConnected = true; };
+
+        es.onmessage = (e) => {
+            if (e.data === 'reload') {
+                console.log('[DevReload] Frontend change detected — reloading...');
+                location.reload();
+            }
+        };
+
+        es.onerror = () => {
+            es.close();
+            if (hasConnected) {
+                const retry = setInterval(() => {
+                    fetch('/').then(() => {
+                        clearInterval(retry);
+                        location.reload();
+                    }).catch(() => {});
+                }, 500);
+            } else {
+                setTimeout(connect, 1000);
+            }
+        };
+    }
+    connect();
+})();
+</script>
+{% endif %}
+
+</body>
+</html>

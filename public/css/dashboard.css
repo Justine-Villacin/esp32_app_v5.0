@@ -1,0 +1,70 @@
+.content-grid { display: grid; grid-template-columns: 1.8fr 1fr; gap: 20px; margin-top: 40px; }
+.panel { background: var(--surface); border: 1px solid var(--border); border-radius: 24px; padding: 28px; box-shadow: 0 10px 30px rgba(0,0,0,0.2); }
+.panel-title { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; }
+.panel-title h3 { font-size: 16px; font-weight: 500; }
+.panel-title span { color: var(--text-muted); font-size: 12px; }
+.live-badge { background: var(--primary-glow); color: var(--primary); padding: 4px 10px; border-radius: 6px; font-size: 10px; font-weight: 700; letter-spacing: 1px; }
+
+/* Charts */
+.chart { height: 240px; position: relative; padding-left: 35px; }
+.grid-line { position: absolute; left: 35px; right: 0; height: 1px; background: var(--border); }
+.line1 { top: 20px; } .line2 { top: 80px; } .line3 { top: 140px; } .line4 { top: 200px; }
+.chart-svg { position: absolute; left: 35px; right: 0; top: 20px; width: calc(100% - 35px); height: 180px; overflow: visible; }
+.chart-labels { position: absolute; left: 35px; right: 0; bottom: 0; display: flex; justify-content: space-between; color: var(--text-muted); font-size: 11px; }
+
+/* Health Section */
+.health { display: flex; align-items: center; gap: 24px; margin-bottom: 30px; background: linear-gradient(180deg, rgba(255,255,255,0.02) 0%, transparent 100%); padding: 20px; border-radius: 16px; border: 1px solid var(--border); }
+.plant { width: 90px; height: 90px; min-width: 90px; border-radius: 50%; background: var(--primary-glow); display: flex; justify-content: center; align-items: center; font-size: 45px; color: var(--primary); box-shadow: 0 0 30px rgba(0,255,136,0.15); }
+.health-score { font-size: 42px; font-weight: 700; color: var(--primary); line-height: 1; margin-bottom: 5px; }
+.health-text { color: var(--text-muted); font-size: 11px; letter-spacing: 1px; font-weight: 600; }
+.progress { width: 100%; height: 8px; background: rgba(255,255,255,0.05); border-radius: 10px; overflow: hidden; margin-top: 12px; }
+.progress-bar { width: 82%; height: 100%; background: var(--primary); border-radius: 10px; transition: width 1s cubic-bezier(0.4, 0, 0.2, 1), background-color 0.5s; box-shadow: 0 0 10px var(--primary); }
+.health-metrics { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.metric { background: rgba(255,255,255,0.02); border: 1px solid var(--border); border-radius: 12px; padding: 16px; }
+.metric-name { color: var(--text-muted); font-size: 10px; letter-spacing: 1px; font-weight: 600; }
+.metric-value { font-size: 14px; font-weight: 500; margin-top: 8px; display: flex; align-items: center; gap: 6px; }
+.metric-value.good { color: var(--primary); }
+.metric-value.warning { color: var(--warning); }
+.metric-value.danger { color: var(--danger); }
+
+/* Bottom Grid & Activity */
+.bottom-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 20px; }
+.activity { display: flex; flex-direction: column; gap: 18px; }
+.activity-row { display: flex; align-items: center; gap: 14px; font-size: 13px; color: var(--text-main); padding-bottom: 14px; border-bottom: 1px solid var(--border); }
+.activity-row:last-child { border-bottom: none; padding-bottom: 0; }
+.activity-dot { width: 8px; height: 8px; min-width: 8px; border-radius: 50%; }
+.activity-time { color: var(--text-muted); margin-left: auto; font-size: 11px; }
+
+/* Storage & Export */
+.storage-card { display: flex; align-items: center; gap: 18px; background: rgba(255,255,255,0.02); padding: 20px; border-radius: 16px; border: 1px solid var(--border); }
+.storage-icon { width: 54px; height: 54px; min-width: 54px; display: flex; justify-content: center; align-items: center; background: var(--primary-glow); color: var(--primary); border-radius: 14px; font-size: 28px; }
+.storage-info h4 { font-size: 14px; font-weight: 500; margin-bottom: 4px; }
+.storage-info p { color: var(--text-muted); font-size: 12px; }
+.storage-actions { margin-left: auto; display: flex; flex-direction: column; align-items: flex-end; gap: 12px; }
+.storage-status { color: var(--primary); font-size: 10px; font-weight: 700; letter-spacing: 1px; background: rgba(0,255,136,0.1); padding: 6px 12px; border-radius: 50px; }
+
+.download-btn { background: transparent; color: var(--primary); border: 1px solid var(--primary); padding: 6px 14px; border-radius: 8px; font-family: inherit; font-size: 10px; font-weight: 700; letter-spacing: 1px; cursor: pointer; display: flex; align-items: center; gap: 6px; transition: all 0.3s ease; }
+.download-btn:hover { background: var(--primary); color: #000; box-shadow: 0 0 15px var(--primary-glow); }
+.download-btn i { font-size: 14px; }
+
+.export-container { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 180px; text-align: center; gap: 15px; }
+.export-icon { font-size: 56px; color: var(--primary); text-shadow: 0 0 20px var(--primary-glow); }
+.export-title { font-size: 16px; margin-bottom: 4px; font-weight: 500; }
+.export-desc { color: var(--text-muted); font-size: 12px; margin-bottom: 16px; }
+.export-count { color: var(--primary); font-weight: 700; font-size: 14px; }
+.badge-recording { background: rgba(0, 255, 136, 0.1); color: var(--primary); }
+
+.export-actions { display: flex; gap: 12px; justify-content: center; }
+/* Global "backend unreachable" banner — distinct from the per-sensor ESP32
+   connection badge in the topbar. The badge means "backend is fine, ESP32
+   isn't answering"; this banner means "the dashboard itself can't reach
+   the server" (a different failure mode, shown differently). */
+.backend-banner { display: flex; align-items: center; gap: 10px; background: rgba(255, 61, 61, 0.12); border: 1px solid var(--danger); color: var(--danger); padding: 10px 16px; border-radius: 12px; font-size: 12px; font-weight: 600; letter-spacing: 0.3px; margin-bottom: 16px; }
+.backend-banner i { font-size: 16px; }
+
+.export-btn { background: transparent; padding: 6px 14px; border-radius: 8px; display: inline-flex; align-items: center; gap: 8px; cursor: pointer; font-family: inherit; font-size: 11px; font-weight: 700; letter-spacing: 1px; transition: all 0.3s ease; }
+.export-btn i { font-size: 14px; }
+.btn-csv { border: 1px solid var(--primary); color: var(--primary); }
+.btn-csv:hover { background: var(--primary); color: #000; box-shadow: 0 0 15px var(--primary-glow); }
+.btn-excel { border: 1px solid var(--info); color: var(--info); }
+.btn-excel:hover { background: var(--info); color: #000; box-shadow: 0 0 15px var(--info-glow); }
